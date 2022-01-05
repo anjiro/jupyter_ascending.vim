@@ -4,17 +4,9 @@ let g:jupyter_ascending_auto_write        = get(g:, 'jupyter_ascending_auto_writ
 
 augroup JupyterAscending
   au!
-
-  if g:jupyter_ascending_auto_write
-    autocmd BufWritePost * :call jupyter_ascending#sync()
-  endif
+	execute 'autocmd BufRead,BufNewFile *'.g:jupyter_ascending_match_pattern 'call jupyter_ascending#init()'
 augroup END
 
 
-nnoremap <Plug>JupyterExecute    :call jupyter_ascending#execute()<CR>
-nnoremap <Plug>JupyterExecuteAll :call jupyter_ascending#execute_all()<CR>
-
-if get(g:, 'jupyter_ascending_default_mappings', v:true)
-  nmap <space><space>x <Plug>JupyterExecute
-  nmap <space><space>X <Plug>JupyterExecuteAll
-endif
+nnoremap <silent> <Plug>JupyterExecute    :call jupyter_ascending#execute()<CR>
+nnoremap <silent> <Plug>JupyterExecuteAll :call jupyter_ascending#execute_all()<CR>

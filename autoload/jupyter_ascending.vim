@@ -1,64 +1,84 @@
-function! s:on_stdout(j, d, e)
-  if len(a:d) > 0 && len(a:d[0]) > 0
-    echom '[JupyterAscending]' a:d
-  endif
+if exists('g:jupyter_ascending_loaded')
+	finish
+endif
+
+function! jupyter_ascending#init() abort " {{{1
+	augroup JupyterAscendingBuffer
+		au! * <buffer>
+		if g:jupyter_ascending_auto_write
+			autocmd BufWritePost <buffer> call jupyter_ascending#sync()
+		endif
+	augroup END
+
+	if get(g:, 'jupyter_ascending_default_mappings', v:true)
+		nmap <silent> <buffer> <space><space>x <Plug>JupyterExecute
+		nmap <silent> <buffer> <space><space>X <Plug>JupyterExecuteAll
+	endif
+
+	echom "Initalize Jupyter Ascending python, please wait..."
+	redraw!
+	call jupyter_ascending#pyinit()
+	echom "...done"
 endfunction
 
-function! s:execute(command_string) abort
-  if has('nvim')
-    call jobstart(a:command_string, {
-          \ 'on_stdout': funcref('s:on_stdout')
-          \ })
-  else
-    call systemlist(a:command_string)
-  end
+" }}}1
+function! jupyter_ascending#pyinit() abort " {{{1
+	if exists('g:jupyter_ascending_py_initialized')
+		return
+	endif
+py3 << EOF
+import vim, tempfile, os
+import jupyter_ascending._environment as ja_env
+from loguru import logger as ja_logger
+ja_logfile = os.path.join(tempfile.gettempdir(), "jupyter_ascending", "log.log")
+ja_config = {"handlers": [
+		{
+			"sink":     ja_logfile,
+			"serialize": False,
+			"level":     ja_env.LOG_LEVEL,
+		},
+		{
+			"sink":   sys.stdout,
+			"format": "{time} - {message}",
+			"level":  "WARNING",
+		},
+	],
+}
+ja_logger.configure(**ja_config)
+vim.vars['ja_logfile'] = ja_logfile
+
+ja_env.EXECUTE_HOST_URL = vim.vars.get('jupyter_ascending_execute_url', ja_env.EXECUTE_HOST_URL)
+
+import jupyter_ascending.requests.sync        as ja_sync
+import jupyter_ascending.requests.execute     as ja_execute
+import jupyter_ascending.requests.execute_all as ja_execute_all
+
+print('Initialized jupyter_ascending')
+EOF
+
+	let g:jupyter_ascending_py_initialized = 1
 endfunction
 
-function! jupyter_ascending#sync() abort
-  let file_name = expand("%:p")
-
-  if match(file_name, g:jupyter_ascending_match_pattern) < 0
-    return
-  endif
-
-  let command_string = printf(
-        \ "%s -m jupyter_ascending.requests.sync --filename '%s'",
-        \ g:jupyter_ascending_python_executable,
-        \ file_name
-        \ )
-
-  call s:execute(command_string)
+" }}}1
+function! jupyter_ascending#sync() abort " {{{1
+	py3 ja_sync.send(vim.current.buffer.name)
 endfunction
 
-function! jupyter_ascending#execute() abort
-  let file_name = expand("%:p")
-
-  if match(file_name, g:jupyter_ascending_match_pattern) < 0
-    return
-  endif
-
-  let command_string = printf(
-        \ "%s -m jupyter_ascending.requests.execute --filename '%s' --linenumber %s",
-        \ g:jupyter_ascending_python_executable,
-        \ file_name,
-        \ line('.')
-        \ )
-
-  call s:execute(command_string)
+" }}}1
+function! jupyter_ascending#execute() abort " {{{1
+	py3 ja_execute.send(vim.current.buffer.name, vim.current.window.cursor[0])
 endfunction
 
-function! jupyter_ascending#execute_all() abort
-  let file_name = expand("%:p")
-
-  if match(file_name, g:jupyter_ascending_match_pattern) < 0
-    return
-  endif
-
-  let command_string = printf(
-        \ "%s -m jupyter_ascending.requests.execute_all --filename '%s'",
-        \ g:jupyter_ascending_python_executable,
-        \ file_name
-        \ )
-
-  call s:execute(command_string)
+" }}}1
+function! jupyter_ascending#execute_all() abort " {{{1
+	py3 ja_execute_all.send(vim.current.buffer.name)
 endfunction
+
+" }}}1
+function! s:do_ja_cmd(cmd) abort " {{{1
+	if a:cmd ==# 'sync'
+		let 
+endfunction
+
+" }}}1
+let g:jupyter_ascending_loaded = 1
