@@ -38,7 +38,7 @@ ja_config = {"handlers": [
 			"level":     ja_env.LOG_LEVEL,
 		},
 		{
-			"sink":   sys.stdout,
+			"sink":   sys.stderr,
 			"format": "{time} - {message}",
 			"level":  "WARNING",
 		},
