@@ -81,4 +81,20 @@ function! s:do_ja_cmd(cmd) abort " {{{1
 endfunction
 
 " }}}1
+function! jupyter_ascending#new_pair(fname, bang) abort " {{{1
+py3 << END
+import vim
+from jupyter_ascending.scripts.make_pair import create_new_file, SYNC_EXTENSION
+fname = vim.eval('a:fname').strip()
+force = vim.eval('a:bang')
+try:
+	create_new_file(fname, force)
+except:
+	raise
+else:
+	vim.command(f'e {fname}.{SYNC_EXTENSION}.py')
+END
+endfunction
+
+" }}}1
 let g:jupyter_ascending_loaded = 1

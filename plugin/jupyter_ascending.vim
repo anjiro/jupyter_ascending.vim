@@ -10,3 +10,5 @@ augroup END
 
 nnoremap <silent> <Plug>JupyterExecute    :call jupyter_ascending#execute()<CR>
 nnoremap <silent> <Plug>JupyterExecuteAll :call jupyter_ascending#execute_all()<CR>
+
+command! -bang -nargs=1 JupyterNewPair call jupyter_ascending#new_pair(<f-args>, <bang>0)
